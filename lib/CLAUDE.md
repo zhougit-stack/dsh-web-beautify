@@ -26,11 +26,12 @@
 
 ## 修改后验证
 
-- dsh-web-beautify/test/verify-v2.js 等脚本（运行方式待确认）
-- Playwright 截图视觉验收（已达标，安装后待实测）
+- dsh-web-beautify/test/verify-v2.js 等 Playwright 注入验证脚本（browser_run_code_unsafe 加载执行）
+- Playwright 截图视觉验收（已达标）；0.1.1 已装入 ~/.dsh/profiles/web，重启后实测待做
 
 ## 已验证经验
 
-- 视觉调优以 Playwright 截图逐轮验证（pnb-6-tooltip.png 验收达标），改动集中在 client.js
-- zhougit-stack-dsh-web-beautify-0.1.0.tgz 已构建于上级目录，待按本地链路安装实测
+- 回复摘要必须结构化选取：dsh 把 reasoning（Think 横幅）与最终回答放在同一 flowItem，回答在其 class 含 markdown 的子容器里，按 innerText 前缀过滤会误杀
+- 无真回答的轮次气泡只显示用户消息（不回退 Think 摘要）
+- 源码已入私有仓库 github.com/zhougit-stack/dsh-web-beautify（v0.1.1）
 <!-- PRECOMPACT:AUTO:MODULE:END -->
