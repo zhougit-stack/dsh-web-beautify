@@ -1,0 +1,9 @@
+# Bundle patch applied over the selected DSH profile when this package is listed
+# in `dsh.profile.bundles`. The row id is deployment-local; the package name
+# must match package.json.
+
+# 美化插件：host 暴露 loopback-only 的 GET /plugins/dsh-web-beautify/file
+# （只读文件预览端点），client 注入琴键导航 + 右侧预览面板（无设置卡片）。
+- insert:
+    - id: web-beautify
+      name: '@zhougit-stack/dsh-web-beautify'
