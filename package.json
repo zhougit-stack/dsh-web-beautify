@@ -1,7 +1,7 @@
 {
   "name": "@zhougit-stack/dsh-web-beautify",
   "description": "DeepSeek Harness web 美化插件：钢琴键对话导航（每条消息一个琴键，点击跳转、hover 摘要、滚动同步高亮）+ 右侧预览面板（点击消息里的图片/网页链接/代码块/文件路径，右滑面板就地预览）。装进全新 dsh 即可用（私有）。",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.21.0",
