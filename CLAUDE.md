@@ -1,0 +1,41 @@
+<!-- AUTO-GENERATED-BY: PRECOMPACT-MAINTAINER -->
+
+# dsh web UI 美化插件 模块说明
+
+<!-- PRECOMPACT:AUTO:MODULE:BEGIN -->
+## 适用范围
+
+本文件适用于 `dsh-web-beautify/` 及其下级目录。
+
+## 模块职责
+
+- dsh web UI 样式注入美化（预览开关胶囊按钮等）
+- test/ 下 Playwright 注入/交互/截图验证脚本
+- tgz 本地打包安装链路
+
+## 主要入口
+
+- `dsh-web-beautify/package.json`
+- `dsh-web-beautify/lib/index.js`
+
+## 依赖边界
+
+- 改动集中在 lib/client.js 注入端
+- 勿在会话内代起 dsh web（沙箱连坐），由用户手动 start-dsh.bat 验证
+- 安装链路：pack→~/.dsh/local-packages→package.json file:→pnpm install
+
+## 修改后验证
+
+- `node test/endpoint-cwd.test.mjs` — 服务端文件端点单测（cwd 解析 / 404 / 绝对路径，6 断言）
+- `node test/mermaid-cache.test.mjs` — mermaid 静态端点单测（ETag/304 / 403，4 断言，0.5.4 起）
+- `node --check lib/client.js` — 客户端语法检查
+- test/*.js 是 Playwright page 函数（签名 `async (page) => {...}`）：把文件内容作为 code 传给 Playwright MCP `browser_run_code_unsafe` 执行；验证前先 `page.route('**/dsh-web-beautify/client.js*')` abort + reload 清掉服务端 client（防双 client 污染）
+- Playwright 截图逐轮视觉验收；安装后由用户手动重启 dsh 实测
+
+## 已验证经验
+
+- 视觉调优流程：Playwright 截图逐轮验证，全部达标后再打包 tgz 安装。
+- dsh web 服务端可能缓存旧版本（曾供 0.1.5），升级后要核对服务端实际供给版本，否则会误判修复无效。
+- 安装时序（bundle mount 前注入）与手工注入结果不同：手工首跳即成功而客户端内持续失败，验证必须按安装时序复现。
+- 0.5.4 简化/性能（行为保持）：hover 渐变 rAF 节流 + 写跳过、滚动同步二分 + 高亮增量、retop 稳态（按钮在且已停靠）零成本跳过（快路径锚点 `[class*="sessionLogButton"]`，实测与旧全文本扫描像素级一致）、innerText→textContent（FINGERPRINT/classify/buildKeys/inferSessionCwd，snippet 保留）、applyPush 关闭态零测量、showPanel/setContent 共用 applyHeader、mermaid 端点 no-store→no-cache + ETag 304 重校验。
+<!-- PRECOMPACT:AUTO:MODULE:END -->
