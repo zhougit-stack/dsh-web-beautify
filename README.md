@@ -1,44 +1,111 @@
-# @zhougit-stack/dsh-web-beautify
+# dsh-web-beautify
 
-dsh web 美化插件（一个包装下两个功能，codex 风格）：
+> DeepSeek Harness Web 美化插件：**钢琴键对话导航** + **右侧预览面板**。
+> 装进 dsh web profile 即可用——零依赖、不注册设置页、无外部网络请求。
 
-## 1. 琴键式对话导航
+![整体效果](screenshots/overview.png)
 
-- 消息流左侧一列细横条「琴键」，**只映射用户发起的消息**（一轮一键），工具调用等事件不建键
-- 琴键列贴对话区最左缘，列高随轮数自适应（上限 60vh，超出自动压缩间隙）
-- 鼠标沿琴键列移动：琴键长度按与鼠标的距离高斯渐变（σ 随节距自适应），codex 同款放大镜效果
-- hover 的琴键弹出该轮消息摘要气泡（跟随、右缘自动翻转）
-- 点击琴键平滑滚动到对应用户消息并闪烁定位；滚动时当前轮次琴键蓝色高亮（参考线 = 容器顶 + 45% 视口高）
-- 右上角 🎹 不存在——导航开关由 localStorage `pnb-piano-collapsed` 控制（当前版本默认常开；如需开关按钮可在设置里后续加回）
+> 例图中宿主侧的会话内容已模糊处理；左侧琴键条、右侧预览面板（多标签 + 代码高亮）均为插件真实渲染。
 
-> 修正：0.1.0 实际不带折叠按钮，琴键列常显。折叠态逻辑保留（该 key 存 '1' 时隐藏）。
+## 功能
 
-## 2. 右侧预览面板
+### 琴键式对话导航
 
-- 右上角 ghost 风格按钮（仿 codex 侧栏开关）开/关右侧面板；Esc 或 ✕ 关闭；左缘可拖拽调宽
-- 点击对话消息里的：
-  - **图片** `<img>` → 面板内就地预览
-  - **网页链接** `http(s) 外链` → sandbox iframe 内嵌预览（拒绝内嵌的站点给 ↗ 新标签按钮；修饰键点击不拦截，走浏览器默认行为）
-  - **代码块** `<pre>` → 语法高亮预览（内置极简高亮器，含复制按钮）
-  - **文件路径**（内联 code 且形似路径）→ 调服务端端点读取预览（代码高亮 / 图片直显）
-- 服务端端点 `GET /plugins/dsh-web-beautify/file?path=...`：仅 loopback + Origin/Host 同源校验、只读、单文件 2MB 上限、二进制拒绝；相对路径只解析到 `$DSH_HOME/workspace`
+- 消息列左侧一条细琴键：**每条消息一个键**，长度 ∝ 消息长度
+- 点击琴键跳到对应消息；hover 弹出内容摘要气泡
+- 滚动对话时当前消息的琴键同步高亮（滚动同步走二分查找 + 增量更新，稳态零成本）
+- 琴键条可整体收起（状态持久化）
 
-## 实现说明
+### 右侧预览面板
 
-- 客户端零依赖纯 DOM（不注册 slot，不进设置页），对宿主 DOM 只用「类名子串 + 结构」探测，兼容 dsh web 的 css-modules 哈希漂移
-- 服务端只挂一个只读文件端点（安全边界见上）
-- 交互参考的社区开源实现：lobehub/lobe-chat `ChatMiniMap`（√长度曲线→本版改为 codex 的鼠标距离渐变、参考线判活）、omdsh-dev/DSH-better-sidebar（链接拦截/修饰键放行/iframe 沙箱）、Bigicemouse/chatgpt-timeline（tick 造型）。openai/codex 主仓为纯 Rust TUI，chatgpt.com/codex 前端未开源，无法直接引用其源码
+点击消息里的内容，右侧滑出面板就地预览：
 
-## 安装（本机 dsh）
+| 内容 | 预览方式 |
+| --- | --- |
+| 图片 | 直接预览 |
+| 外部网页链接 | 面板内嵌 iframe（拦截宿主的新窗口打开） |
+| 代码块 / 文件 | 语法高亮 + 一键复制 |
+| `.md` | Markdown 渲染（标题 / 列表 / 表格 / 代码块 / mermaid 图） |
+| `.pdf` | 面板内 iframe |
 
-```bash
-cd dsh-web-beautify && pnpm pack
-cp zhougit-stack-dsh-web-beautify-<ver>.tgz ~/.dsh/local-packages/
-# 编辑 ~/.dsh/profiles/web/package.json：
-#   dependencies 加 "@zhougit-stack/dsh-web-beautify": "file:C:/Users/Administrator/.dsh/local-packages/zhougit-stack-dsh-web-beautify-<ver>.tgz"
-#   dsh.profile.bundles 数组追加 "@zhougit-stack/dsh-web-beautify"
-cd ~/.dsh/profiles/web && pnpm install --prefer-offline
-# 重启 dsh web（用 start-dsh.bat 手动重启）
+- **开关语义**：点击同一预览对象再次点击 = 关闭面板（文件不存在的错误态同样适用）
+- **多标签**：每个预览对象一个标签，切换保留内容与滚动位置，× 关闭单个标签
+- **会话独立记忆**：面板开关状态与标签按会话独立保存；切换会话时恢复打开带滑入动画、关闭瞬时完成
+- 面板宽度可拖拽调整（持久化），对话列自动推挤平移
+
+| Markdown 渲染 | 代码预览（多标签） |
+| --- | --- |
+| ![Markdown 预览](screenshots/panel-md.png) | ![代码预览](screenshots/panel-code.png) |
+
+## 安装
+
+**要求**：dsh（web 模式）、Node `^22.19.0 || >=24.0.0`、pnpm（近版即可）。
+
+插件通过 dsh web profile 安装——profile（`~/.dsh/profiles/web/`）就是一个标准 pnpm 项目。
+
+### 方式一：tgz 安装（当前可用）
+
+1. 从本仓库根目录取发布包 `zhougit-stack-dsh-web-beautify-<版本>.tgz`
+   （或自行构建：clone 本仓库后 `pnpm pack`）
+2. 拷贝到 `~/.dsh/local-packages/`
+3. 编辑 web profile 的 `package.json`，添加依赖并登记 bundle：
+
+   ```json
+   {
+     "dependencies": {
+       "@zhougit-stack/dsh-web-beautify": "file:C:/Users/<你的用户>/.dsh/local-packages/zhougit-stack-dsh-web-beautify-0.5.6.tgz"
+     },
+     "dsh": {
+       "profile": {
+         "bundles": ["@zhougit-stack/dsh-web-beautify"]
+       }
+     }
+   }
+   ```
+
+   > 已有其他 bundle 时把包名追加进数组即可；Linux/macOS 用 `file:` + 绝对路径。
+4. 在 profile 目录执行 `pnpm install`，重启 dsh。
+
+### 方式二：npm 安装（发布后可用）
+
+包发布到 npm registry 后，profile 依赖直接引用 registry 版本：
+
+```json
+{
+  "dependencies": {
+    "@zhougit-stack/dsh-web-beautify": "0.5.6"
+  }
+}
 ```
 
-升级：重 pack → 换 tgz → 改 package.json 版本指向 → pnpm install → 重启。
+`pnpm install` + 重启即可。
+
+## 使用
+
+| 操作 | 效果 |
+| --- | --- |
+| 点击消息里的图片 / 外链 / 代码块 / 文件路径 | 右侧预览 |
+| 再次点击同一预览对象 | 关闭面板（开关） |
+| ✕ / Esc / 右上角开关胶囊 | 关闭面板 |
+| 拖拽面板左缘 | 调整宽度（持久化） |
+| 左侧琴键 | 点击跳转、hover 摘要、滚动同步高亮 |
+| 标签条 × | 关闭该预览标签 |
+
+文件预览端点仅监听回环地址（127.0.0.1），只读，文本 2MB / 40 万字符上限；相对路径先按当前会话 cwd 解析，缺省回退 `$DSH_HOME/workspace`。
+
+## 开发
+
+```bash
+node --check lib/client.js          # 客户端语法检查
+node test/endpoint-cwd.test.mjs     # 文件端点单测（cwd 解析 / 404 / 绝对路径）
+node test/mermaid-cache.test.mjs    # mermaid 静态端点单测（ETag / 304 / 403）
+pnpm pack --pack-destination .      # 打 tgz 发布包
+```
+
+- `test/*.js` 是 Playwright 页面函数（签名 `async (page) => {...}`），对着已打开的 dsh web 页面运行
+- 客户端 `lib/client.js` 为零依赖浏览器 IIFE，经 `window.__ModuleLoader__.load` 挂载，注册 id 必须等于包名
+- mermaid 运行时（`lib/mermaid.min.js`，约 2.7MB）随仓库内置，服务端静态端点供给（no-cache + ETag 304 重校验），客户端首用才拉取
+
+## License
+
+[MIT](./LICENSE)
